@@ -1,3 +1,50 @@
+from flask import Flask, request, render_template, send_file
+import os
+from pytube import YouTube
+from pydub import AudioSegment
+
+app = Flask(__name__)
+
+# Ensure ffmpeg is set up correctly
+AudioSegment.converter = "ffmpeg"
+
+@app.route("/", methods=["GET", "POST"])
+def home():
+    if request.method == "POST":
+        url = request.form.get("url")
+        start_time = int(request.form.get("start_time", 0))
+        duration = int(request.form.get("duration", 30))
+
+        if not url:
+            return "Please enter a valid YouTube URL."
+
+        try:
+            # Download YouTube audio
+            yt = YouTube(url)
+            audio_stream = yt.streams.filter(only_audio=True).first()
+            temp_audio_file = "temp_audio.mp4"
+            audio_stream.download(filename=temp_audio_file)
+
+            # Process audio
+            audio = AudioSegment.from_file(temp_audio_file, format="mp4")
+            snippet = audio[start_time * 1000: (start_time + duration) * 1000]
+
+            output_filename = "snippet.mp3"
+            snippet.export(output_filename, format="mp3")
+
+            os.remove(temp_audio_file)  # Cleanup temp file
+
+            return send_file(output_filename, as_attachment=True)
+
+        except Exception as e:
+            return f"Error: {str(e)}"
+
+    return render_template("index.html")
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
+
+
 import os
 from pytube import YouTube
 from pydub import AudioSegment
