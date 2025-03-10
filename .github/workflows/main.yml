@@ -1,0 +1,24 @@
+import os
+from pytube import YouTube
+from pydub import AudioSegment
+
+def download_youtube_audio(url, start_time=0, duration=30, output_filename="snippet.mp3"):
+    # Download video
+    yt = YouTube(url)
+    audio_stream = yt.streams.filter(only_audio=True).first()
+    temp_audio_file = audio_stream.download(filename="temp_audio.mp4")
+
+    # Convert to audio format and create snippet
+    audio = AudioSegment.from_file(temp_audio_file, format="mp4")
+    snippet = audio[start_time * 1000: (start_time + duration) * 1000]
+
+    # Export snippet
+    snippet.export(output_filename, format="mp3")
+    print(f"Audio snippet saved as {output_filename}")
+
+    # Clean up
+    os.remove(temp_audio_file)
+
+# Example usage
+youtube_url = "https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
+download_youtube_audio(youtube_url)
